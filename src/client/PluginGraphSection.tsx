@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PluginGraphKey } from './locales.ts'
-import { buildVisualGraph, type PluginGraphModel } from './graph-model.ts'
+import { buildVisualGraph, shortName, type PluginGraphModel } from './graph-model.ts'
 import { ForceGraph, type ForceGraphNode, type ForceGraphEdge } from './ForceGraph.tsx'
 import css from './PluginGraphSection.module.css'
 
@@ -59,6 +59,34 @@ export function PluginGraphSection({ t, build }: PluginGraphSectionProps): React
   const nodes: ForceGraphNode[] = visual?.nodes ?? []
   const edges: ForceGraphEdge[] = visual?.edges ?? []
 
+  // Koishi-style hover info box: label row plus the node's relationship facts.
+  const renderInfo = (node: ForceGraphNode): ReactNode => {
+    const row = (key: PluginGraphKey, values: string[] | undefined): ReactNode => (
+      <p className={css.infoRow}>
+        <span>{header(key)}</span>
+        {values === undefined || values.length === 0
+          ? <code className={css.infoEmpty}>{header('infoNone')}</code>
+          : <code>{values.map(shortName).join('、')}</code>}
+      </p>
+    )
+    return (
+      <div>
+        <h4 className={css.infoTitle}>{header(node.kind === 'slot' ? 'infoSlot' : 'infoPlugin')}：{node.label}</h4>
+        {node.kind === 'slot' ? (
+          <>
+            {row('infoDeclaredBy', node.declaredBy === undefined ? [] : [node.declaredBy])}
+            {row('infoRegistrants', node.registrants)}
+          </>
+        ) : (
+          <>
+            {row('infoDependencies', node.dependencies)}
+            {row('infoDependents', node.dependents)}
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className={css.section}>
       <h2 className={css.heading}>{header('title')}</h2>
@@ -75,6 +103,7 @@ export function PluginGraphSection({ t, build }: PluginGraphSectionProps): React
               <ForceGraph
                 nodes={nodes}
                 edges={edges}
+                renderInfo={renderInfo}
                 onExpand={() => setExpanded(true)}
                 expandLabel={header('expand')}
               />
@@ -103,7 +132,7 @@ export function PluginGraphSection({ t, build }: PluginGraphSectionProps): React
                 <path d="m6 6 12 12" />
               </svg>
             </button>
-            <ForceGraph nodes={nodes} edges={edges} height="100%" />
+            <ForceGraph nodes={nodes} edges={edges} renderInfo={renderInfo} height="100%" />
           </div>
         </div>
       )}

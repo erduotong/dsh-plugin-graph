@@ -21,6 +21,14 @@ export interface ForceGraphNode {
   label: string
   /** Incident edge count, drives node radius. */
   degree: number
+  /** Plugin nodes: packages this plugin injects. */
+  dependencies?: string[]
+  /** Plugin nodes: packages injecting this one. */
+  dependents?: string[]
+  /** Slot nodes: the plugin that declared the slot (absent for built-in 'root'). */
+  declaredBy?: string
+  /** Slot nodes: plugins registered into this slot. */
+  registrants?: string[]
 }
 
 /** One input edge: endpoint ids plus the family that drives its color. */
@@ -57,6 +65,8 @@ export interface ForceGraphProps {
   onExpand?: () => void
   /** Accessible label for the expand button. */
   expandLabel?: string
+  /** Renders a hover info box next to a node; returns null to show nothing. */
+  renderInfo?: (node: ForceGraphNode) => ReactNode
 }
 
 const REPULSION = 6500
@@ -156,7 +166,7 @@ function clampZoom(k: number): number {
 }
 
 /** Render the force-directed graph canvas. */
-export function ForceGraph({ nodes, edges, height = 520, onExpand, expandLabel = 'Expand' }: ForceGraphProps): ReactNode {
+export function ForceGraph({ nodes, edges, height = 520, onExpand, expandLabel = 'Expand', renderInfo }: ForceGraphProps): ReactNode {
   const wrapRef = useRef<HTMLDivElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
@@ -350,6 +360,15 @@ export function ForceGraph({ nodes, edges, height = 520, onExpand, expandLabel =
   const v = viewRef.current
   const showLabels = v.k >= 0.55
 
+  // Screen position of the hovered node (viewBox maps 1:1 to the container),
+  // used to anchor the info box next to it.
+  const hoveredSim = hover === null ? undefined : sim.find(node => node.id === hover)
+  const hoverScreen = hoveredSim === undefined ? null : {
+    x: v.x + hoveredSim.x * v.k,
+    y: v.y + hoveredSim.y * v.k,
+  }
+  const infoRight = hoverScreen !== null && hoverScreen.x > size.w / 2
+
   return (
     <div ref={wrapRef} className={css.canvas} style={{ height }}>
       <svg
@@ -435,6 +454,19 @@ export function ForceGraph({ nodes, edges, height = 520, onExpand, expandLabel =
             <path d="M9 9 3 3" />
           </svg>
         </button>
+      )}
+
+      {hoverScreen !== null && renderInfo !== undefined && hoveredSim !== undefined && (
+        <div
+          className={css.infoBox}
+          style={{
+            left: infoRight ? undefined : hoverScreen.x + 14,
+            right: infoRight ? size.w - hoverScreen.x + 14 : undefined,
+            top: hoverScreen.y,
+          }}
+        >
+          {renderInfo(hoveredSim)}
+        </div>
       )}
     </div>
   )

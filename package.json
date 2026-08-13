@@ -1,6 +1,7 @@
 {
   "name": "dsh-plugin-graph",
   "version": "0.1.0",
+  "description": "Web settings surface for DeepSeek Harness: a force-directed relationship graph of client plugins — inject dependencies and slot registrations. / DSH 设置页插件关系图谱（力导向图）。",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
@@ -19,6 +20,48 @@
     },
     "./package.json": "./package.json"
   },
+  "files": [
+    "lib",
+    "src",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "**/*.module.css"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsdown",
+    "prepare": "pnpm run build",
+    "test": "vitest run --pool=threads"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "plugin",
+    "graph",
+    "force-directed",
+    "visualization",
+    "settings",
+    "relationship",
+    "依赖图谱",
+    "关系图谱"
+  ],
+  "license": "MIT",
+  "author": "erduotong",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erduotong/dsh-plugin-graph.git"
+  },
+  "bugs": {
+    "url": "https://github.com/erduotong/dsh-plugin-graph/issues"
+  },
+  "homepage": "https://github.com/erduotong/dsh-plugin-graph",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "dsh": {
     "client": {
       "inject": [
@@ -29,14 +72,6 @@
       "platform": "web"
     }
   },
-  "scripts": {
-    "build": "tsc -p tsconfig.json && tsdown",
-    "prepare": "pnpm run build"
-  },
-  "files": [
-    "lib",
-    "src"
-  ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-client-locale": "^0.1.0-rc.5",

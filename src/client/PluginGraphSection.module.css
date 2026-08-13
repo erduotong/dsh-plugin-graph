@@ -160,3 +160,37 @@
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-primary);
 }
+
+.infoTitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.infoRow {
+  display: flex;
+  gap: 6px;
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 17px;
+}
+
+.infoRow span {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.infoRow code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dsw-alias-label-secondary);
+  font-family: var(--ds-font-family-code);
+  font-size: 11px;
+}
+
+.infoEmpty {
+  color: var(--dsw-alias-label-tertiary) !important;
+}

@@ -81,6 +81,14 @@ export interface GraphVizNode {
   label: string
   /** Incident edge count, drives node radius. */
   degree: number
+  /** Plugin nodes: packages this plugin injects. */
+  dependencies?: string[]
+  /** Plugin nodes: packages injecting this one. */
+  dependents?: string[]
+  /** Slot nodes: the plugin that declared the slot (absent for built-in 'root'). */
+  declaredBy?: string
+  /** Slot nodes: plugins registered into this slot. */
+  registrants?: string[]
 }
 
 /** One edge in the force-directed visualization. */
@@ -121,8 +129,16 @@ export function buildVisualGraph(model: PluginGraphModel): GraphViz {
     return node
   }
 
-  for (const plugin of model.plugins) ensure(plugin.id, 'plugin')
-  for (const slot of model.slots) ensure(slot.name, 'slot')
+  for (const plugin of model.plugins) {
+    const node = ensure(plugin.id, 'plugin')
+    node.dependencies = plugin.dependencies
+    node.dependents = plugin.dependents
+  }
+  for (const slot of model.slots) {
+    const node = ensure(slot.name, 'slot')
+    if (slot.declaredBy !== undefined) node.declaredBy = slot.declaredBy
+    node.registrants = slot.registrants
+  }
 
   const edges: GraphVizEdge[] = []
   const seen = new Set<string>()

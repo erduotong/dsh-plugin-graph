@@ -14,6 +14,13 @@ export const zh = {
   'hint': '拖拽节点调整布局 · 拖拽空白处平移画布 · 滚轮缩放 · 悬停高亮相邻关系',
   'expand': '放大查看',
   'close': '关闭',
+  'infoPlugin': '插件',
+  'infoSlot': '插槽',
+  'infoDependencies': '依赖',
+  'infoDependents': '被依赖',
+  'infoDeclaredBy': '声明者',
+  'infoRegistrants': '注册者',
+  'infoNone': '无',
   'empty': '暂无数据',
 } satisfies Record<string, string>
 
@@ -34,5 +41,12 @@ export const en = {
   'hint': 'Drag nodes to rearrange · drag the canvas to pan · scroll to zoom · hover to highlight neighbors',
   'expand': 'Expand',
   'close': 'Close',
+  'infoPlugin': 'Plugin',
+  'infoSlot': 'Slot',
+  'infoDependencies': 'Dependencies',
+  'infoDependents': 'Depended by',
+  'infoDeclaredBy': 'Declared by',
+  'infoRegistrants': 'Registrants',
+  'infoNone': 'None',
   'empty': 'No data',
 } satisfies Record<PluginGraphKey, string>

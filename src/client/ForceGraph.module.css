@@ -46,6 +46,7 @@
 
 .label {
   fill: var(--dsw-alias-label-secondary);
+  opacity: 0.55;
   font-family: var(--ds-font-family-code);
   font-size: 10px;
   line-height: 12px;
@@ -81,4 +82,58 @@
 .expand:hover {
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-primary);
+}
+
+.infoBox {
+  position: absolute;
+  z-index: 2;
+  max-width: 260px;
+  transform: translateY(-50%);
+  padding: 8px 10px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-overlay);
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+  line-height: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+
+.infoTitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.infoRow {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 17px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.infoRow code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--ds-font-family-code);
+  font-size: 11px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.infoRow span:first-child {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.infoEmpty {
+  color: var(--dsw-alias-label-tertiary);
 }
