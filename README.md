@@ -1,11 +1,12 @@
 # 
 
-Web settings surface: an inter-plugin relationship graph. One settings section ("Plugin Graph" / 插件关系图谱) renders two read-only blocks:
+Web settings surface: an inter-plugin relationship graph. One settings section ("Plugin Graph" / 插件关系图谱) renders a **force-directed graph** (Koishi/Obsidian style):
 
-- **Inject dependencies** — one row per client plugin with its package-level `inject` edges and the reverse dependents, read from the host-composed `window.__DSH_BOOT__` manifest.
-- **Slot registrations** — the live slot declaration tree from `ctx.slots.snapshot()`, showing each slot's declarer and its registrants.
+- **Nodes** — one per client plugin (blue) and one per declared slot (amber diamond), sized by incident edge count.
+- **Edges** — three color-coded families: inject dependencies (plugin → dependency, from the host-composed `window.__DSH_BOOT__` manifest), slot declarations (slot → declaring plugin), and slot registrations (slot → registrant, from the live `ctx.slots.snapshot()` ledger).
+- **Interactions** — drag nodes (reheats the layout), drag the canvas to pan, scroll to zoom, hover to highlight a node and its neighbors. Purely presentational: no navigation behavior yet.
 
-Data is assembled by the pure builder in `src/client/graph-model.ts` (boot wire + slot ledger → `PluginGraphModel`); the component owns no store and subscribes to nothing — the inject face exposes `build()` as a synchronous snapshot, re-read on mount and on the refresh affordance.
+Data is assembled by the pure builder in `src/client/graph-model.ts` (boot wire + slot ledger → `PluginGraphModel` → `buildVisualGraph` → nodes/edges); the force layout and canvas live in the self-contained `src/client/ForceGraph.tsx` (no external layout library). The component owns no store and subscribes to nothing — the inject face exposes `build()` as a synchronous snapshot, re-read on mount and on the refresh affordance.
 
 ## Repository layout
 

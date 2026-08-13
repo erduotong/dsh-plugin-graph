@@ -1,0 +1,62 @@
+.canvas {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle, var(--dsw-alias-border-l1) 1px, transparent 1px) 0 0 / 26px 26px,
+    var(--dsw-alias-bg-layer-1);
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+/* Edge families: inject dependency / slot declaration / slot registration. */
+.edgeInject {
+  stroke: var(--dsw-static-blue-400);
+}
+
+.edgeDeclares {
+  stroke: var(--dsw-static-green-500);
+}
+
+.edgeRegisters {
+  stroke: var(--dsw-static-amber-400);
+}
+
+/* Node families: client plugin / declared slot. */
+.nodePlugin {
+  fill: var(--dsw-static-deepseek-500);
+  stroke: var(--dsw-alias-bg-layer-1);
+  stroke-width: 1.5px;
+}
+
+.nodeSlot {
+  fill: var(--dsw-static-amber-500);
+  stroke: var(--dsw-alias-bg-layer-1);
+  stroke-width: 1.5px;
+}
+
+.label {
+  fill: var(--dsw-alias-label-secondary);
+  font-family: var(--ds-font-family-code);
+  font-size: 10px;
+  line-height: 12px;
+  pointer-events: none;
+}
+
+.empty {
+  margin: 0;
+  padding: 12px 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+}

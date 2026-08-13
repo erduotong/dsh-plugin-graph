@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { LiveSlotNode } from '@deepseek-ai/dsh-client-ui-slots'
-import { buildPluginGraph, shortName } from '../src/client/graph-model.ts'
+import { buildPluginGraph, buildVisualGraph, shortName } from '../src/client/graph-model.ts'
 import type { BootGraphWire } from '../src/client/graph-model.ts'
 
 function slot(name: string, registrants: string[], declaredBy?: string, children: LiveSlotNode[] = []): LiveSlotNode {
@@ -112,5 +112,58 @@ describe('buildPluginGraph', () => {
     expect(model.plugins).toEqual([])
     expect(model.edges).toEqual([])
     expect(model.slots).toEqual([])
+  })
+})
+
+describe('buildVisualGraph', () => {
+  it('maps plugins and inject edges to viz nodes with degree', () => {
+    const wire: BootGraphWire = {
+      entries: [
+        { id: 'a', inject: ['b'] },
+        { id: 'b' },
+      ],
+    }
+    const model = buildPluginGraph(wire, [])
+    const viz = buildVisualGraph(model)
+    expect(viz.nodes.map(node => [node.id, node.kind, node.label, node.degree])).toEqual([
+      ['a', 'plugin', 'a', 1],
+      ['b', 'plugin', 'b', 1],
+    ])
+    expect(viz.edges).toEqual([{ source: 'a', target: 'b', kind: 'inject' }])
+  })
+
+  it('adds slot nodes plus declares and registers edges', () => {
+    const tree: LiveSlotNode[] = [
+      slot('root', [], undefined, [
+        slot('sidebar', ['@deepseek-ai/dsh-client-ui-sidebar'], '@deepseek-ai/dsh-client-ui-layout'),
+      ]),
+    ]
+    const model = buildPluginGraph(undefined, tree)
+    const viz = buildVisualGraph(model)
+    const slotNode = viz.nodes.find(node => node.id === 'sidebar')
+    expect(slotNode?.kind).toBe('slot')
+    expect(slotNode?.label).toBe('sidebar')
+    expect(slotNode?.degree).toBe(2)
+    expect(viz.edges).toContainEqual({ source: 'sidebar', target: '@deepseek-ai/dsh-client-ui-layout', kind: 'declares' })
+    expect(viz.edges).toContainEqual({ source: 'sidebar', target: '@deepseek-ai/dsh-client-ui-sidebar', kind: 'registers' })
+  })
+
+  it('stamps short labels and deduplicates repeated edges', () => {
+    const wire: BootGraphWire = {
+      entries: [
+        { id: '@deepseek-ai/dsh-client-ui-layout', inject: ['@deepseek-ai/dsh-client-ui-slots'] },
+      ],
+    }
+    const model = buildPluginGraph(wire, [])
+    const viz = buildVisualGraph(model)
+    const layout = viz.nodes.find(node => node.id === '@deepseek-ai/dsh-client-ui-layout')
+    expect(layout?.label).toBe(shortName('@deepseek-ai/dsh-client-ui-layout'))
+    expect(viz.edges.filter(edge => edge.kind === 'inject')).toHaveLength(1)
+  })
+
+  it('returns empty lists for an empty model', () => {
+    const viz = buildVisualGraph(buildPluginGraph(undefined, []))
+    expect(viz.nodes).toEqual([])
+    expect(viz.edges).toEqual([])
   })
 })

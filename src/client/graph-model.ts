@@ -71,10 +71,79 @@ export interface PluginGraphModel {
   hasBoot: boolean
 }
 
+/** One node in the force-directed visualization. */
+export interface GraphVizNode {
+  /** Full package name or slot key. */
+  id: string
+  /** Node family, drives shape and color. */
+  kind: 'plugin' | 'slot'
+  /** Short display label (package tail). */
+  label: string
+  /** Incident edge count, drives node radius. */
+  degree: number
+}
+
+/** One edge in the force-directed visualization. */
+export interface GraphVizEdge {
+  /** Source node id. */
+  source: string
+  /** Target node id. */
+  target: string
+  /** Edge family, drives color: inject dependency / slot declaration / slot registration. */
+  kind: 'inject' | 'declares' | 'registers'
+}
+
+/** The complete force-graph payload: nodes plus color-coded edges. */
+export interface GraphViz {
+  nodes: GraphVizNode[]
+  edges: GraphVizEdge[]
+}
+
 /** Short display id for a slot registrant or declaredBy label (package-name tail). */
 export function shortName(id: string): string {
   const unscoped = id.startsWith('@') ? id.slice(id.indexOf('/') + 1) : id
   return unscoped.replace(/^cordis:/, '')
+}
+
+/**
+ * Build the force-directed graph payload from the assembled model: one node
+ * per plugin and per slot, with inject edges (plugin → dependency), declares
+ * edges (slot → declaring plugin), and registers edges (slot → registrant).
+ * Pure and deterministic — the renderer owns no model logic.
+ */
+export function buildVisualGraph(model: PluginGraphModel): GraphViz {
+  const nodes = new Map<string, GraphVizNode>()
+  const ensure = (id: string, kind: GraphVizNode['kind']): GraphVizNode => {
+    const existing = nodes.get(id)
+    if (existing !== undefined) return existing
+    const node: GraphVizNode = { id, kind, label: shortName(id), degree: 0 }
+    nodes.set(id, node)
+    return node
+  }
+
+  for (const plugin of model.plugins) ensure(plugin.id, 'plugin')
+  for (const slot of model.slots) ensure(slot.name, 'slot')
+
+  const edges: GraphVizEdge[] = []
+  const seen = new Set<string>()
+  const pushEdge = (source: string, target: string, kind: GraphVizEdge['kind']): void => {
+    const key = `${kind}\u0000${source}\u0000${target}`
+    if (seen.has(key)) return
+    seen.add(key)
+    edges.push({ source, target, kind })
+    // All endpoints are pre-created above (plugins from the model, slots from
+    // the slot rows), so ensure() only bumps degree on the existing node.
+    ensure(source, 'plugin').degree += 1
+    ensure(target, 'plugin').degree += 1
+  }
+
+  for (const edge of model.edges) pushEdge(edge.from, edge.to, 'inject')
+  for (const slot of model.slots) {
+    if (slot.declaredBy !== undefined) pushEdge(slot.name, slot.declaredBy, 'declares')
+    for (const registrant of slot.registrants) pushEdge(slot.name, registrant, 'registers')
+  }
+
+  return { nodes: [...nodes.values()], edges }
 }
 
 /** Sort an id array for stable output. */
