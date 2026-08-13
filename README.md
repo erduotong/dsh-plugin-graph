@@ -44,25 +44,17 @@ dsh plugin --profile web add /path/to/dsh-plugin-graph
 
 > `dsh plugin add` 会把包装进 profile 的 `package.json` 依赖并链接到 `~/.dsh/profiles/web/node_modules`。请**不要**用裸 `npm i dsh-plugin-graph` 安装——那只会装进当前目录的 `node_modules`，dsh 并不知道它。
 
-### 3. 挂载插件（patch 配置）
+本包自带 `dsh.bundle` 声明（`cordis.patch.yml` 配置层），`dsh plugin add` 后会自动追加到 profile 的 `dsh.profile.bundles` 层叠，启动时由包自带的 patch 挂载 `ui-plugin-graph` 行——**无需手动编辑 `cordis.patch.yml`**。
 
-编辑 `~/.dsh/profiles/web/cordis.patch.yml`，加入：
+> 升级提示：如果在旧版本（无 `dsh.bundle`）时手动往 `cordis.patch.yml` 加过 `insert: - id: ui-plugin-graph`，请删除该条目，避免与 bundle 自带的挂载重复。
 
-```yaml
-- insert:
-   - id: dsh-plugin-graph
-     name: dsh-plugin-graph
-```
-
-`name` 必须与包的 `package.json` 中的 `name` 完全一致（安装方式 A / B 都一样）。
-
-### 4. 重启并打开
+### 3. 重启并打开
 
 1. **重启 dsh Web 进程**（配置变更和 loader 条目都需要重启才生效）。
 2. 打开设置页（侧边栏底部「设置」）→ 找到 **「插件关系图谱」** 入口（位于 Agent 预设之后）。
 3. 点击进入，即看到力导向图。
 
-### 5. 使用画布
+### 4. 使用画布
 
 | 操作 | 效果 |
 |---|---|
@@ -73,18 +65,19 @@ dsh plugin --profile web add /path/to/dsh-plugin-graph
 | 点击右上角 ⤢ | 打开全屏模态框（Esc / 遮罩 / × 关闭） |
 | 点击 ↻ | 手动刷新（重新读取启动清单与插槽注册表） |
 
-### 6. 卸载
+### 5. 卸载
 
 ```bash
 dsh plugin --profile web remove dsh-plugin-graph
 ```
 
-然后删除 `cordis.patch.yml` 中对应的 `insert` 条目（否则重启会因找不到插件而报错），最后重启 dsh。
+`dsh` 会同时移除依赖与 `dsh.profile.bundles` 里的层条目；如果旧版本手动加过 `cordis.patch.yml` 的 `insert`，也一并删除，最后重启 dsh。
 
-### 7. 常见问题
+### 6. 常见问题
 
-- **设置页没有「插件关系图谱」入口**：检查 `cordis.patch.yml` 的 `name` 是否与包名一致；确认重启过 dsh；确认 `node_modules` 里链接存在（`ls ~/.dsh/profiles/web/node_modules/dsh-plugin-graph`）。
-- **安装时报 peer 依赖冲突**：本包 peer 版本需与当前 dsh 发行版本匹配（`@deepseek-ai/dsh-*` 为 `^0.1.0-rc.x`）。升级 dsh 后如有冲突，同步升级本包。
+- **设置页没有「插件关系图谱」入口**：确认 `dsh plugin add` 后 profile 的 `package.json` 中 `dsh.profile.bundles` 包含 `dsh-plugin-graph`（`cat ~/.dsh/profiles/web/package.json`）；确认重启过 dsh；确认 `node_modules` 里链接存在（`ls ~/.dsh/profiles/web/node_modules/dsh-plugin-graph`）。
+- **安装时报 `declares no dsh.bundle` 警告**：说明安装的版本过旧（< 0.2.0，尚无 bundle 声明），升级后重新 `dsh plugin add` 即可自动成为 profile 层。
+- **安装时 pnpm 报 peer 依赖缺失（`missing peer @deepseek-ai/cordis / react ...`）**：这是预期提示。profile 模板固定 `autoInstallPeers: false` + hoisted linker，缺失 peer 会回退到安装级 `profiles/node_modules`，运行时由宿主提供，功能不受影响（harness 内部 client 插件同样声明这些 peer）。若升级 dsh 后版本不匹配，同步升级本包。
 - **图谱里看不到宿主插件**：本图只覆盖客户端插件（`__DSH_BOOT__` 内的 `dsh.client` 行）；宿主平面行（webserver、storage 等）仅在被插槽声明/注册时出现。见「已知限制」。
 
 ## 构建与测试

@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-graph",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Web settings surface for DeepSeek Harness: a force-directed relationship graph of client plugins — inject dependencies and slot registrations. / DSH 设置页插件关系图谱（力导向图）。",
   "type": "module",
   "main": "lib/index.js",
@@ -18,11 +18,13 @@
       "types": "./lib/types/client/index.d.ts",
       "default": "./lib/client.js"
     },
+    "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "files": [
     "lib",
     "src",
+    "cordis.patch.yml",
     "LICENSE"
   ],
   "sideEffects": [
@@ -63,6 +65,9 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "inject": [
         "@deepseek-ai/dsh-client-runtime",

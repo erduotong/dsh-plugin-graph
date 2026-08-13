@@ -1,0 +1,8 @@
+# dsh-plugin-graph as a profile layer: mounting the node half puts its
+# package name on the Loader's entry list, which the client-modules scan
+# picks up (the package declares dsh.client) into window.__DSH_BOOT__ —
+# one `dsh plugin add` activates both halves without hand-editing the
+# profile's own cordis.patch.yml.
+- insert:
+    - id: dsh-plugin-graph
+      name: dsh-plugin-graph
