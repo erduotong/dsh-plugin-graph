@@ -18,25 +18,74 @@ DeepSeek Harness（DSH）Web 设置页插件：以**力导向图**（Koishi / Ob
 - **放大查看**：画布右上角展开按钮，打开全屏模态框，支持 Esc / 遮罩 / × 关闭。
 - **只读快照**：不订阅任何事件，挂载与手动刷新时重建图。
 
-## 安装与接入
+## 快速上手
 
-本包以 `dsh.client` 清单声明浏览器插件。要把它接入一个 dsh web 组合（例如 `~/.dsh/profiles/web`）：
+### 1. 前置条件
 
-1. 安装依赖：
+- 已安装 DeepSeek Harness，并至少启动过一次 Web 界面（会生成 `~/.dsh/profiles/web`）。
+
+### 2. 安装插件
+
+二选一：
+
+
+
+**方式 A：从 npm registry 安装（推荐一般用户使用）**
 
 ```bash
-dsh plugin add /path/to/dsh-plugin-graph
+dsh plugin --profile web add dsh-plugin-graph
 ```
 
-2. 在 profile 的 `cordis.patch.yml` 中挂载：
+**方式 B：从本地源码目录安装（开发 / 未发布时）**
+
+```bash
+dsh plugin --profile web add /path/to/dsh-plugin-graph
+```
+
+> `dsh plugin add` 会把包装进 profile 的 `package.json` 依赖并链接到 `~/.dsh/profiles/web/node_modules`。请**不要**用裸 `npm i dsh-plugin-graph` 安装——那只会装进当前目录的 `node_modules`，dsh 并不知道它。
+
+### 3. 挂载插件（patch 配置）
+
+编辑 `~/.dsh/profiles/web/cordis.patch.yml`，加入：
 
 ```yaml
 - insert:
-   - id: ui-plugin-graph
+   - id: dsh-plugin-graph
      name: dsh-plugin-graph
 ```
 
-3. 重启 dsh 后，设置页会出现「插件关系图谱」入口。
+`name` 必须与包的 `package.json` 中的 `name` 完全一致（安装方式 A / B 都一样）。
+
+### 4. 重启并打开
+
+1. **重启 dsh Web 进程**（配置变更和 loader 条目都需要重启才生效）。
+2. 打开设置页（侧边栏底部「设置」）→ 找到 **「插件关系图谱」** 入口（位于 Agent 预设之后）。
+3. 点击进入，即看到力导向图。
+
+### 5. 使用画布
+
+| 操作 | 效果 |
+|---|---|
+| 拖拽节点 | 钉住该节点，重新加热布局 |
+| 拖拽空白处 | 平移画布 |
+| 滚轮 | 缩放 |
+| 悬停节点 | 高亮相邻节点，弹出信息框（依赖/被依赖、声明者/注册者） |
+| 点击右上角 ⤢ | 打开全屏模态框（Esc / 遮罩 / × 关闭） |
+| 点击 ↻ | 手动刷新（重新读取启动清单与插槽注册表） |
+
+### 6. 卸载
+
+```bash
+dsh plugin --profile web remove dsh-plugin-graph
+```
+
+然后删除 `cordis.patch.yml` 中对应的 `insert` 条目（否则重启会因找不到插件而报错），最后重启 dsh。
+
+### 7. 常见问题
+
+- **设置页没有「插件关系图谱」入口**：检查 `cordis.patch.yml` 的 `name` 是否与包名一致；确认重启过 dsh；确认 `node_modules` 里链接存在（`ls ~/.dsh/profiles/web/node_modules/dsh-plugin-graph`）。
+- **安装时报 peer 依赖冲突**：本包 peer 版本需与当前 dsh 发行版本匹配（`@deepseek-ai/dsh-*` 为 `^0.1.0-rc.x`）。升级 dsh 后如有冲突，同步升级本包。
+- **图谱里看不到宿主插件**：本图只覆盖客户端插件（`__DSH_BOOT__` 内的 `dsh.client` 行）；宿主平面行（webserver、storage 等）仅在被插槽声明/注册时出现。见「已知限制」。
 
 ## 构建与测试
 
