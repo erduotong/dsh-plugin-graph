@@ -51,8 +51,12 @@ interface SimEdge {
 export interface ForceGraphProps {
   nodes: ForceGraphNode[]
   edges: ForceGraphEdge[]
-  /** Canvas height in px; width fills the section. */
-  height?: number
+  /** Canvas height in px (or a CSS length like '100%'); width fills the section. */
+  height?: number | string
+  /** When set, renders the expand button in the top-right corner. */
+  onExpand?: () => void
+  /** Accessible label for the expand button. */
+  expandLabel?: string
 }
 
 const REPULSION = 6500
@@ -80,8 +84,9 @@ function radiusOf(degree: number): number {
 }
 
 /** One physics step: repulsion, springs, centering, damping, integration. */
-function tickSim(sim: SimNode[], edges: SimEdge[], alpha: number, w: number, h: number): void {
+function tickSim(sim: SimNode[], edges: SimEdge[], alpha: number, w: number, h: number, pinned = -1): void {
   const n = sim.length
+  const isPinned = (i: number): boolean => i === pinned
   for (let i = 0; i < n; i++) {
     const a = sim[i]
     for (let j = i + 1; j < n; j++) {
@@ -98,10 +103,14 @@ function tickSim(sim: SimNode[], edges: SimEdge[], alpha: number, w: number, h: 
       const f = (REPULSION * alpha) / d2
       const fx = (dx / d) * f
       const fy = (dy / d) * f
-      a.vx += fx
-      a.vy += fy
-      b.vx -= fx
-      b.vy -= fy
+      if (!isPinned(i)) {
+        a.vx += fx
+        a.vy += fy
+      }
+      if (!isPinned(j)) {
+        b.vx -= fx
+        b.vy -= fy
+      }
     }
   }
 
@@ -114,13 +123,19 @@ function tickSim(sim: SimNode[], edges: SimEdge[], alpha: number, w: number, h: 
     const f = (d - REST_LENGTH) * SPRING * alpha
     const fx = (dx / d) * f
     const fy = (dy / d) * f
-    a.vx += fx
-    a.vy += fy
-    b.vx -= fx
-    b.vy -= fy
+    if (!isPinned(edge.source)) {
+      a.vx += fx
+      a.vy += fy
+    }
+    if (!isPinned(edge.target)) {
+      b.vx -= fx
+      b.vy -= fy
+    }
   }
 
-  for (const a of sim) {
+  for (let i = 0; i < n; i++) {
+    if (isPinned(i)) continue
+    const a = sim[i]
     a.vx += (w / 2 - a.x) * CENTER * alpha
     a.vy += (h / 2 - a.y) * CENTER * alpha
     a.vx *= DAMPING
@@ -141,7 +156,7 @@ function clampZoom(k: number): number {
 }
 
 /** Render the force-directed graph canvas. */
-export function ForceGraph({ nodes, edges, height = 520 }: ForceGraphProps): ReactNode {
+export function ForceGraph({ nodes, edges, height = 520, onExpand, expandLabel = 'Expand' }: ForceGraphProps): ReactNode {
   const wrapRef = useRef<HTMLDivElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
@@ -172,7 +187,10 @@ export function ForceGraph({ nodes, edges, height = 520 }: ForceGraphProps): Rea
         return
       }
       const { w, h } = sizeRef.current
-      for (let i = 0; i < SUBSTEPS; i++) tickSim(simRef.current, edgeRef.current, alpha, w, h)
+      // A node being dragged is pinned: it keeps its pointer position while
+      // every other node still feels its repulsion and springs.
+      const pinned = dragRef.current !== null && dragRef.current.mode === 'node' ? dragRef.current.index : -1
+      for (let i = 0; i < SUBSTEPS; i++) tickSim(simRef.current, edgeRef.current, alpha, w, h, pinned)
       alphaRef.current = alpha * ALPHA_DECAY
       setFrame(frame => frame + 1)
       rafRef.current = requestAnimationFrame(loop)
@@ -398,6 +416,26 @@ export function ForceGraph({ nodes, edges, height = 520 }: ForceGraphProps): Rea
           })}
         </g>
       </svg>
+      {onExpand !== undefined && (
+        <button
+          type="button"
+          className={css.expand}
+          aria-label={expandLabel}
+          title={expandLabel}
+          onClick={onExpand}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m15 15 6 6" />
+            <path d="m15 9 6-6" />
+            <path d="M21 16v5h-5" />
+            <path d="M21 8V3h-5" />
+            <path d="M3 16v5h5" />
+            <path d="m3 21 6-6" />
+            <path d="M3 8V3h5" />
+            <path d="M9 9 3 3" />
+          </svg>
+        </button>
+      )}
     </div>
   )
 }

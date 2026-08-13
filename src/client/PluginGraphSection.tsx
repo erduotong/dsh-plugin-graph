@@ -32,10 +32,26 @@ export type PluginGraphSectionProps =
 export function PluginGraphSection({ t, build }: PluginGraphSectionProps): ReactNode {
   const [graph, setGraph] = useState<PluginGraphModel | null>(null)
   const [refresh, setRefresh] = useState(0)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     setGraph(build())
   }, [build, refresh])
+
+  // Esc closes the modal; lock page scroll while it is open.
+  useEffect(() => {
+    if (!expanded) return
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setExpanded(false)
+    }
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = previous
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [expanded])
 
   const header = (key: PluginGraphKey): string => t(key)
 
@@ -56,10 +72,15 @@ export function PluginGraphSection({ t, build }: PluginGraphSectionProps): React
 
           {nodes.length === 0 ? <p className={css.status}>{header('empty')}</p> : (
             <>
-              <ForceGraph nodes={nodes} edges={edges} />
+              <ForceGraph
+                nodes={nodes}
+                edges={edges}
+                onExpand={() => setExpanded(true)}
+                expandLabel={header('expand')}
+              />
               <ul className={css.legend}>
-                <li><span className={css.swatchPlugin} aria-hidden="true" />{header('legendPlugin')}</li>
-                <li><span className={css.swatchSlot} aria-hidden="true" />{header('legendSlot')}</li>
+                <li><span className={`${css.swatch} ${css.swatchPlugin}`} aria-hidden="true" />{header('legendPlugin')}</li>
+                <li><span className={`${css.swatch} ${css.swatchSlot}`} aria-hidden="true" />{header('legendSlot')}</li>
                 <li><span className={css.swatchInject} aria-hidden="true" />{header('legendInject')}</li>
                 <li><span className={css.swatchDeclares} aria-hidden="true" />{header('legendDeclares')}</li>
                 <li><span className={css.swatchRegisters} aria-hidden="true" />{header('legendRegisters')}</li>
@@ -68,6 +89,23 @@ export function PluginGraphSection({ t, build }: PluginGraphSectionProps): React
             </>
           )}
         </>
+      )}
+
+      {expanded && (
+        <div
+          className={css.modalBackdrop}
+          onClick={event => { if (event.target === event.currentTarget) setExpanded(false) }}
+        >
+          <div className={css.modal} role="dialog" aria-modal="true" aria-label={header('title')}>
+            <button type="button" className={css.modalClose} aria-label={header('close')} onClick={() => setExpanded(false)}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+            <ForceGraph nodes={nodes} edges={edges} height="100%" />
+          </div>
+        </div>
       )}
     </div>
   )

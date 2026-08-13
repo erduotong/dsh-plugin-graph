@@ -12,6 +12,8 @@ export const zh = {
   'legendDeclares': '声明插槽',
   'legendRegisters': '注册到插槽',
   'hint': '拖拽节点调整布局 · 拖拽空白处平移画布 · 滚轮缩放 · 悬停高亮相邻关系',
+  'expand': '放大查看',
+  'close': '关闭',
   'empty': '暂无数据',
 } satisfies Record<string, string>
 
@@ -30,5 +32,7 @@ export const en = {
   'legendDeclares': 'Declares slot',
   'legendRegisters': 'Registered into slot',
   'hint': 'Drag nodes to rearrange · drag the canvas to pan · scroll to zoom · hover to highlight neighbors',
+  'expand': 'Expand',
+  'close': 'Close',
   'empty': 'No data',
 } satisfies Record<PluginGraphKey, string>
