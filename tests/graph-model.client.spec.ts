@@ -5,12 +5,13 @@
  * the assembled page).
  */
 import { describe, expect, it } from 'vitest'
-import type { LiveSlotNode } from '@deepseek-ai/dsh-client-ui-slots'
+import type { LiveCompositionNode, LiveSlotNode } from '@deepseek-ai/dsh-client-ui-slots'
 import { buildPluginGraph, buildVisualGraph, shortName } from '../src/client/graph-model.ts'
 import type { BootGraphWire } from '../src/client/graph-model.ts'
 
 function slot(name: string, registrants: string[], declaredBy?: string, children: LiveSlotNode[] = []): LiveSlotNode {
   return {
+    type: 'slot',
     name,
     kind: 'list',
     scope: 'root',
@@ -90,6 +91,23 @@ describe('buildPluginGraph', () => {
     // Slot registrants join the plugin set with source 'slot'.
     const layout = model.plugins.find(plugin => plugin.id === '@deepseek-ai/dsh-client-ui-layout')
     expect(layout?.source).toBe('slot')
+  })
+
+  it('descends Factory definitions without emitting a row for them', () => {
+    // The composition snapshot is a union: a Factory node carries no slot kind,
+    // so only the child Slots it declares become rows.
+    const tree: LiveCompositionNode[] = [
+      {
+        type: 'factory',
+        name: 'panel',
+        scope: 'root',
+        registrant: '@deepseek-ai/dsh-client-ui-goal',
+        children: [slot('panel.item', ['@deepseek-ai/dsh-client-ui-goal'], '@deepseek-ai/dsh-client-ui-goal')],
+      },
+    ]
+    const model = buildPluginGraph(undefined, tree)
+    expect(model.slots.map(entry => entry.name)).toEqual(['panel.item'])
+    expect(model.slots[0]?.declaredBy).toBe('@deepseek-ai/dsh-client-ui-goal')
   })
 
   it('merges boot and slot sources into both and deduplicates registrants', () => {

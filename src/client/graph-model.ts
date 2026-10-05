@@ -4,16 +4,18 @@
  *
  * - the client boot manifest (`window.__DSH_BOOT__`, host-composed): one node
  *   per client plugin with its package-level `inject` dependency edges;
- * - the live slot ledger (`ctx.slots.snapshot()`): the slot declaration tree
- *   with the registrant label stamped on each occupant, so a plugin's UI
- *   surface (which slot it registered into) is a second edge kind.
+ * - the live slot composition topology (`ctx.slots.snapshot()`): the slot
+ *   declaration tree with the registrant label stamped on each occupant, so a
+ *   plugin's UI surface (which slot it registered into) is a second edge kind.
+ *   That snapshot is a discriminated union; a Factory definition contributes
+ *   no row of its own, only its child slots are collected.
  *
  * Both reads are synchronous snapshots; the graph is a pure function of them.
  * Type-only imports only — the bundle purity gate forbids value imports of
  * non-platform packages, and the boot manifest is read raw off the window.
  */
 
-import type { LiveSlotNode, LiveSlotOccupant } from '@deepseek-ai/dsh-client-ui-slots'
+import type { LiveCompositionNode, LiveSlotNode, LiveSlotOccupant } from '@deepseek-ai/dsh-client-ui-slots'
 
 /** The window.__DSH_BOOT__ shape this package reads (a structural subset of the host-composed graph). */
 export interface BootGraphEntry {
@@ -167,10 +169,17 @@ function sorted(ids: Iterable<string>): string[] {
   return [...new Set(ids)].sort()
 }
 
-/** Collect every slot node in declaration order, descending the children chains. */
-function flattenSlots(roots: LiveSlotNode[]): SlotGraphNode[] {
+/**
+ * Collect every ordinary slot row in declaration order, descending the
+ * children chains. `ctx.slots.snapshot()` returns the declaration topology as
+ * a union of ordinary Slot and Factory nodes; a Factory definition has no
+ * cardinality of its own, so it contributes no row — only its child slots do.
+ * The discriminant is read defensively (`=== 'factory'`), so a snapshot that
+ * predates the union still resolves every node as an ordinary Slot.
+ */
+function flattenSlots(roots: LiveCompositionNode[]): SlotGraphNode[] {
   const rows: SlotGraphNode[] = []
-  const visit = (node: LiveSlotNode): void => {
+  const collect = (node: LiveSlotNode): void => {
     const registrants = sorted(node.occupants.map(occupant => occupant.registrant).filter((value): value is string => value !== undefined))
     rows.push({
       name: node.name,
@@ -179,19 +188,25 @@ function flattenSlots(roots: LiveSlotNode[]): SlotGraphNode[] {
       ...node.declaredBy === undefined ? {} : { declaredBy: node.declaredBy },
       registrants,
     })
-    for (const child of node.children) visit(child)
+    for (const child of node.children) collect(child)
   }
-  for (const node of roots) visit(node)
+  for (const node of roots) {
+    if (node.type === 'factory') {
+      for (const child of node.children) collect(child)
+      continue
+    }
+    collect(node)
+  }
   return rows
 }
 
 /**
- * Assemble the plugin graph from the boot manifest and the slot ledger.
+ * Assemble the plugin graph from the boot manifest and the slot topology.
  * @param wire - the raw `window.__DSH_BOOT__` value (empty entries tolerated).
- * @param slotTree - the live slot declaration tree from `ctx.slots.snapshot()`.
+ * @param slotTree - the live composition tree from `ctx.slots.snapshot()`.
  * @returns the sorted, deduplicated graph model.
  */
-export function buildPluginGraph(wire: BootGraphWire | undefined, slotTree: LiveSlotNode[]): PluginGraphModel {
+export function buildPluginGraph(wire: BootGraphWire | undefined, slotTree: LiveCompositionNode[]): PluginGraphModel {
   const boot = wire?.entries ?? []
   const nodes = new Map<string, PluginGraphNode>()
   const ensure = (id: string, source: PluginGraphNode['source']): PluginGraphNode => {
@@ -243,4 +258,4 @@ export function buildPluginGraph(wire: BootGraphWire | undefined, slotTree: Live
   }
 }
 
-export type { LiveSlotNode, LiveSlotOccupant }
+export type { LiveCompositionNode, LiveSlotNode, LiveSlotOccupant }

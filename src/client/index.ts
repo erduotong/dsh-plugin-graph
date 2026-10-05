@@ -2,12 +2,17 @@
  * Plugin-graph surface plugin, browser half: one settings section reading the
  * client plugin relationship graph. The inject face closes over the apply
  * ctx to read two live snapshots on demand — the boot manifest
- * (`window.__DSH_BOOT__`) and the slot ledger (`ctx.slots.snapshot()`) — so
- * the component stays pure props and the plugin owns no store, no events,
- * and no subscription machinery.
+ * (`window.__DSH_BOOT__`) and the slot composition topology
+ * (`ctx.slots.snapshot()`) — so the component stays pure props and the plugin
+ * owns no store, no events, and no subscription machinery.
  */
 
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+// The browser half's ctx is plain Cordis. DSH no longer publishes
+// `@deepseek-ai/dsh-client-runtime`; every client package now takes
+// `Context` from the vendored cordis directly.
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: pulls the renderer's Context merge (ctx.slots, the SlotRegistry service).
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the settings shell's SlotMap merge (the 'settings.section' entry).
@@ -40,6 +45,7 @@ function readBootGraph(): BootGraphWire | undefined {
  * @param ctx - the browser plugin context.
  */
 export function apply(ctx: ClientContext): void {
+  const t = ctx.locale.bind(NS)
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-plugin-graph: section dictionaries')
 
   const injected = (): PluginGraphSectionInjected => ({
@@ -52,7 +58,7 @@ export function apply(ctx: ClientContext): void {
     name: 'settings.section',
     id: 'plugin-graph',
     order: 30,
-    label: () => ctx.locale.bind(NS)('nav'),
+    label: () => t('nav'),
     locale: NS,
     inject: injected,
   }, PluginGraphSection))
